@@ -1,0 +1,70 @@
+Sub convertDates()
+  Dim iter1 As Integer
+  Dim col_count As Integer
+
+  ' Modify the sheet number to match the appropriate sheet for the consolidated sheet
+  col_count = Sheet1.Cells(Sheet1.Columns.Count, 1).End(xlToRight).Column
+  
+  For iter1 = 1 To col_count
+    If StrComp("Expiration", Cells(1, iter1).Value) = 0 Then
+      Columns(iter1).Replace _
+        What:="Jan", Replacement:="1", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Feb", Replacement:="2", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Mar", Replacement:="3", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Apr", Replacement:="4", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="May", Replacement:="5", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Jun", Replacement:="6", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Jul", Replacement:="7", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Aug", Replacement:="8", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Sep", Replacement:="9", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Oct", Replacement:="10", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Nov", Replacement:="11", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Dec", Replacement:="12", LookAt:=xlPart
+
+      Columns(iter1).Replace _
+        What:=" ", Replacement:="/", LookAt:=xlPart
+    End If
+    
+    If StrComp("Creation", Cells(1, iter1).Value) = 0 Then
+      Columns(iter1).Replace _
+        What:="Jan", Replacement:="1", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Feb", Replacement:="2", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Mar", Replacement:="3", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Apr", Replacement:="4", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="May", Replacement:="5", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Jun", Replacement:="6", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Jul", Replacement:="7", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Aug", Replacement:="8", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Sep", Replacement:="9", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Oct", Replacement:="10", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Nov", Replacement:="11", LookAt:=xlPart
+      Columns(iter1).Replace _
+        What:="Dec", Replacement:="12", LookAt:=xlPart
+
+      Columns(iter1).Replace _
+        What:=" ", Replacement:="/", LookAt:=xlPart
+    End If
+  Next iter1
+End Sub
+

@@ -1,0 +1,23 @@
+Sub getNinetyDays()
+  Dim iter1 As Integer
+  Dim iter2 As Integer
+  Dim row_count As Integer
+  Dim col_count As Integer
+
+  ' Modify the sheet number to match the appropriate sheet for the consolidated sheet
+  row_count = Sheet3.Cells(Sheet3.Rows.Count, "A").End(xlUp).Row
+  col_count = Sheet3.Cells(Sheet3.Columns.Count, 1).End(xlToRight).Column
+  
+  For iter1 = 1 To col_count
+    If StrComp("Expiration", Cells(1, iter1).Value) = 0 Then
+      If StrComp("90 Days", Cells(1, iter1 + 1).Value) <> 0 Then
+        Columns(iter1 + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+        Cells(1, iter1 + 1).Value = "90 Days"
+        For iter2 = 2 To row_count
+          Cells(iter2, iter1 + 1) = DateAdd("d", -90, Cells(iter2, iter1).Value)
+        Next iter2
+      End If
+      Exit For
+    End If
+  Next iter1
+End Sub

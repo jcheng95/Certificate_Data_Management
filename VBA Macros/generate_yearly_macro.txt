@@ -1,0 +1,35 @@
+Sub getYearly()
+  Dim iter1 As Integer
+  Dim iter2 As Integer
+  Dim iter3 As Integer
+  Dim row_count As Integer
+  Dim col_count As Integer
+  Dim final_column As Integer
+  Dim date_diff As Long
+  Dim comparison_date As Long
+  ' Modify the sheet number to match the appropriate sheet for the consolidated sheet
+  row_count = Sheet3.Cells(Sheet3.Rows.Count, "A").End(xlUp).Row
+  col_count = Sheet3.Cells(Sheet3.Columns.Count, 1).End(xlToRight).Column
+  
+  ' Modifiable for future-proofing
+  comparison_date = 1
+  ' This one will need to be the last column + 1 to prevent overwriting on a pre-existing column
+  final_column = 23
+  
+  For iter1 = 1 To col_count
+    If StrComp("Expiration", Cells(1, iter1).Value) = 0 Then Exit For
+    Next iter1
+  For iter2 = 1 To col_count
+    If StrComp("Creation", Cells(1, iter2).Value) = 0 Then Exit For
+    Next iter2
+  
+  For iter3 = 2 To row_count
+    date_diff = DateDiff("yyyy", Cells(iter3, iter2), Cells(iter3, iter1))
+    If date_diff = comparison_date Then
+      Cells(iter3, final_column).Value = "Please use this"
+    Else
+      Cells(iter3, final_column).Value = ""
+    End If
+  Next iter3
+End Sub
+
