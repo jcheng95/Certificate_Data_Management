@@ -1,9 +1,12 @@
-#!/bin/usr/env python
+#!/usr/bin/env python
 
 import sys
 import readline # This import allows for an improvement of the input function
 import atexit
 import os
+
+# Created by:
+# Jacky Cheng
 
 """
 The aim of this script is to parse a text file without using a higher-level object-oriented language.
@@ -38,6 +41,7 @@ Results format has the follow columns (in order):
 cert_store = ''
 location = ''
 product = ''
+product_component = ''
 received_on = ''
 received_from = ''
 host_name_available = False
@@ -49,6 +53,18 @@ owner_splice_start = 7
 issuer_splice_start = 8
 serialNumber_splice_start = 15
 keyStrength_splice_start = 28
+
+hostname_comp_string = "============ servername:"
+alias_comp_string = "Alias"
+certType_comp_string = "Entry type:"
+owner_comp_string = "Owner"
+issuer_comp_string = "Issuer:"
+serialNumber_comp_string = "Serial"
+startDate_comp_string = "start"
+expirationDate_comp_string = "expiration"
+keyStrength_comp_string = "Signature"
+public_key_type = "trustedCertEntry"
+private_key_type = "PrivateKeyEntry"
 
 # Variable to be used for grabbing one certificate at a time
 is_full_metadata = False
@@ -238,6 +254,203 @@ def validateAndExtractDates(current_string, comp_string, line, start_or_expirati
     return current_string
 
 """
+Performs a check on the line to see if the host name is on the line.
+"""
+def checkForHostName(hostName, line):
+  newHostName = validateAndExtractServerNames(hostName, hostname_comp_string, line, hostname_splice_start)
+  return newHostName
+
+"""
+Performs a check on the line to see if the alias is on the line. Afterwards, the necessary string reformatting is performed.
+"""
+def checkForAlias(alias, line):
+  newAlias = validateAndExtract(alias, alias_comp_string, line, alias_splice_start)
+  # Some aliases use an issuer/owner name (which is strange) so we must remove the commas
+  newAlias = newAlias.replace(',', '_')
+  return newAlias
+
+"""
+Performs a check on the line to see if the key type is on the line. Afterwards, the necessary string reformatting is performed.
+"""
+def checkForCertType(certType, line):
+  newCertType = validateAndExtract(certType, certType_comp_string, line, certType_splice_start)
+  # Removes any newlines that might have been generated during the printing of the
+  # input text file or any DOS code that wasn't originally recognized
+  newCertType = newCertType.replace('\r', '')
+  newCertType = newCertType.replace('\n', '')
+  return newCertType
+
+"""
+Performs a check on the line to see if the owner is on the line. Afterwards, the necessary string reformatting is performed.
+"""
+def checkForOwner(owner, line):
+  newOwner = validateAndExtract(owner, owner_comp_string, line, owner_splice_start)
+  newOwner = newOwner.replace(',', '_')
+  # Removes any newlines that might have been generated during the printing of the
+  # input text file or any DOS code that wasn't originally recognized
+  newOwner = newOwner.replace('\r', '')
+  newOwner = newOwner.replace('\n', '')
+  return newOwner
+
+"""
+Performs a check on the line to see if the issuer is on the line. Afterwards, the necessary string reformatting is performed.
+"""
+def checkForIssuer(issuer, line):
+  newIssuer = validateAndExtract(issuer, issuer_comp_string, line, issuer_splice_start)
+  newIssuer = newIssuer.replace(',', '_')
+  # Removes any newlines that might have been generated during the printing of the
+  # input text file or any DOS code that wasn't originally recognized
+  newIssuer = newIssuer.replace('\r', '')
+  newIssuer = newIssuer.replace('\n', '')
+  return newIssuer
+
+"""
+Performs a check on the line to see if the serial number is on the line.
+"""
+def checkForSerialNumber(serialNumber, line):
+  newSerialNumber = validateAndExtract(serialNumber, serialNumber_comp_string, line, serialNumber_splice_start)
+  return newSerialNumber
+
+"""
+Performs a check on the line to see if the start date is on the line. Afterwards, the necessary string reformatting is performed.
+"""
+def checkForStartDate(startDate, line):
+  newStartDate = validateAndExtractDates(startDate, "Valid", line, startDate_comp_string)
+  # Removes any newlines that might have been generated during the printing of the
+  # input text file or any DOS code that wasn't originally recognized
+  newStartDate = newStartDate.replace('\r', '')
+  return newStartDate
+
+"""
+Performs a check on the line to see if the expiration date is on the line. Afterwards, the necessary string reformatting is performed.
+"""
+def checkForExpirationDate(expirationDate, line):
+  newExpirationDate = validateAndExtractDates(expirationDate, "Valid", line, expirationDate_comp_string)
+  # Removes any newlines that might have been generated during the printing of the
+  # input text file or any DOS code that wasn't originally recognized
+  newExpirationDate = newExpirationDate.replace('\r', '')
+  return newExpirationDate
+
+"""
+Performs a check on the line to see if the key strength is on the line. Afterwards, the necessary string reformatting is performed.
+"""
+def checkForKeyStrength(keyStrength, line):
+  newKeyStrength = validateAndExtract(keyStrength, keyStrength_comp_string, line, keyStrength_splice_start)
+  newKeyStrength = newKeyStrength.replace("with", " with ")
+  return newKeyStrength
+
+"""
+Writes all the appropriate variables into the results file in the correct format for further data manipulation after the full results are generated.
+TODO: Add functionality to change file type by extension. If no extension exists, leave the value as blank. 
+"""
+def writeToFile(hostName, alias, certType, owner, issuer, serialNumber, startDate, expirationDate, keyStrength):
+  # Beyond just having a full set of metadata, we have to check that it wasn't set to full due to an error (repetition/redundancy is acceptable and can be removed easily in post-results)
+  # Import line to results.csv
+  """
+  Archived,Location,Product,Product Component,Host Name/IP,Expiration,Connection,Use,Alias/Common Name,Issuer,Creation,File Name,Key Pair Location,File Type,Key Strength,Owner/Subject/RootCA Title,Serial Number,Owner,Comments,Received On,Received From,Inherited
+  """
+  # Determines if the entry was a client certificate or a server certificate
+  if certType == public_key_type:
+    if host_name_available:
+      results.write("," + \
+                    location + "," + \
+                    product + "," + \
+                    product_component + "," + \
+                    hostName + "," + \
+                    expirationDate + \
+                    ",,Trusted Cert," + \
+                    alias + "," + \
+                    issuer + "," + \
+                    startDate + "," + \
+                    os.path.basename(cert_store) + \
+                    ",,.jks," + \
+                    keyStrength + "," + \
+                    owner + "," + \
+                    serialNumber + \
+                    ",,," + \
+                    received_on + "," + \
+                    received_from + "," + \
+                    "YES\n")
+    else:
+      results.write("," + \
+                    location + "," + \
+                    product + "," + \
+                    product_component + ",," + \
+                    expirationDate + \
+                    ",,Trusted Cert," + \
+                    alias + "," + \
+                    issuer + "," + \
+                    startDate + "," + \
+                    os.path.basename(cert_store) + \
+                    ",,.jks," + \
+                    keyStrength + "," + \
+                    owner + "," + \
+                    serialNumber + \
+                    ",,," + \
+                    received_on + "," + \
+                    received_from + "," + \
+                    "YES\n")
+  elif certType == private_key_type:
+    if host_name_available:
+      results.write("," + \
+                    location + "," + \
+                    product + "," + \
+                    product_component + "," + \
+                    hostName + "," + \
+                    expirationDate + \
+                    ",,Key Pair," + \
+                    alias + "," + \
+                    issuer + "," + \
+                    startDate + "," + \
+                    os.path.basename(cert_store) + \
+                    ",,.jks," + \
+                    keyStrength + "," + \
+                    owner + "," + \
+                    serialNumber + \
+                    ",,," + \
+                    received_on + "," + \
+                    received_from + "," + \
+                    "YES\n")
+    else:
+      results.write("," + \
+                    location + "," + \
+                    product + "," + \
+                    product_component + ",," + \
+                    expirationDate + \
+                    ",,Key Pair," + \
+                    alias + "," + \
+                    issuer + "," + \
+                    startDate + "," + \
+                    os.path.basename(cert_store) + \
+                    ",,.jks," + \
+                    keyStrength + "," + \
+                    owner + "," + \
+                    serialNumber + \
+                    ",,," + \
+                    received_on + "," + \
+                    received_from + "," + \
+                    "YES\n")
+
+"""
+This function checks if all appropriate variables have been assigned. If the appropriate variables have been assigned, the variables are printed out in the following format:
+alias, key type, host name, issuer, owner, serial number, start date, expiration date, key strength
+
+This function also returns whether or not the check was successful.
+"""
+def checkForCompleteness(hostName, alias, certType, owner, issuer, serialNumber, startDate, expirationDate, keyStrength):
+  # Provides an output to see the results of the extraction and to validate that the list of metadata is full
+  if (alias != "") and (certType != "") and (serialNumber != "") and (issuer != "") and \
+     (owner != "") and (expirationDate != "") and (startDate != "") and \
+     (keyStrength != ""):
+    if host_name_available:
+      print("\nExtraction Result:\n\n{}, {}, {}, {}, {}, {}, {}, {}, {}".format(alias, certType, hostName, issuer, owner, serialNumber, startDate, expirationDate, keyStrength))
+    else:
+      print("\nExtraction Result:\n\n{}, {}, '', {}, {}, {}, {}, {}, {}".format(alias, certType, issuer, owner, serialNumber, startDate, expirationDate, keyStrength))
+    return True
+  else:
+    return False
+
+"""
 This function parses through each line of the text file that this script takes as user input
 and then prints out all the pertinent metadata (including hard-coded values stored as global
 variables) in the appropriate columns headers format to results.csv
@@ -278,7 +491,7 @@ def parse():
       # Ensures only the starts (before any certificate metadata) of the servernames are recognized
       # to be used as the host name/IP
       if host_name_available:
-        host_name = validateAndExtractServerNames(host_name, "============ servername:", line, hostname_splice_start)
+        host_name = checkForHostName(host_name, line)
 
       # This entire set of logic could have been placed in a separate function for modularity
       # ** Take note to do this in future revisions **
@@ -286,143 +499,37 @@ def parse():
         # Nested if statement control flow to prevent multiple calls to the validateAndExtract
         # or validateAndExtractDates functions which will take up space on the assembly instructions set
         if alias == "":
-          alias = validateAndExtract(alias, "Alias", line, alias_splice_start)
-          # Some aliases use an issuer/owner name (which is strange) so we must remove the commas
-          alias = alias.replace(',', '_')
+          alias = checkForAlias(alias, line)
         else:
           if cert_type == "":
-            cert_type = validateAndExtract(cert_type, "Entry type:", line, certType_splice_start)
-            # Removes any newlines that might have been generated during the printing of the
-            # input text file or any DOS code that wasn't originally recognized
-            cert_type = cert_type.replace('\r', '')
-            cert_type = cert_type.replace('\n', '')
+            cert_type = checkForCertType(cert_type, line)
           else:
             if owner == "":
-              owner = validateAndExtract(owner, "Owner", line, owner_splice_start)
-              owner = owner.replace(',', '_')
-              # Removes any newlines that might have been generated during the printing of the
-              # input text file or any DOS code that wasn't originally recognized
-              owner = owner.replace('\r', '')
-              owner = owner.replace('\n', '')
+              owner = checkForOwner(owner, line)
             else:
               if issuer == "":
-                issuer = validateAndExtract(issuer, "Issuer:", line, issuer_splice_start)
-                issuer = issuer.replace(',', '_')
-                # Removes any newlines that might have been generated during the printing of the
-                # input text file or any DOS code that wasn't originally recognized
-                issuer = issuer.replace('\r', '')
-                issuer = issuer.replace('\n', '')
+                issuer = checkForIssuer(issuer, line)
               else:
                 if serial_number == "":
-                  serial_number = validateAndExtract(serial_number, "Serial", line, serialNumber_splice_start)
+                  serial_number = checkForSerialNumber(serial_number, line)
                 else:
                   if start_date == "":
-                    start_date = validateAndExtractDates(start_date, "Valid", line, "start")
-                    # Removes any newlines that might have been generated during the printing of the
-                    # input text file or any DOS code that wasn't originally recognized
-                    start_date = start_date.replace('\r', '')
+                    start_date = checkForStartDate(start_date, line)
                   if expiration_date == "":
-                    expiration_date = validateAndExtractDates(expiration_date, "Valid", line, "expiration")
-                    # Removes any newlines that might have been generated during the printing of the
-                    # input text file or any DOS code that wasn't originally recognized
-                    expiration_date = expiration_date.replace('\r', '')
+                    expiration_date = checkForExpirationDate(expiration_date, line)
                   else:
                     if key_strength == "":
-                      key_strength = validateAndExtract(key_strength, "Signature", line, keyStrength_splice_start)
-                      key_strength = key_strength.replace("with", " with ")
-        # Provides an output to see the results of the extraction and to validate that the list of metadata is full
-        if (alias != "") and (cert_type != "") and (serial_number != "") and (issuer != "") and \
-           (owner != "") and (expiration_date != "") and (start_date != "") and \
-           (key_strength != ""):
-          is_full_metadata = True
-          if host_name_available:
-            print("\nExtraction Result:\n\n{}, {}, {}, {}, {}, {}, {}, {}, {}".format(alias, cert_type, host_name, issuer, owner, serial_number, start_date, expiration_date, key_strength))
-          else:
-            print("\nExtraction Result:\n\n{}, {}, "", {}, {}, {}, {}, {}, {}".format(alias, cert_type, issuer, owner, serial_number, start_date, expiration_date, key_strength))
+                      key_strength = checkForKeyStrength(key_strength, line)
+        if host_name_available:
+          is_full_metadata = checkForCompleteness(host_name, alias, cert_type, owner, issuer, serial_number, start_date, expiration_date, key_strength)
+        else:
+          is_full_metadata = checkForCompleteness('', alias, cert_type, owner, issuer, serial_number, start_date, expiration_date, key_strength)
+      else:
+        if host_name_available:
+          writeToFile(host_name, alias, cert_type, owner, issuer, serial_number, start_date, expiration_date, key_strength)
+        else:
+          writeToFile('', alias, cert_type, owner, issuer, serial_number, start_date, expiration_date, key_strength)
 
-      if is_full_metadata:
-        # Beyond just having a full set of metadata, we have to check that it wasn't set to full due to an error (repetition/redundancy is acceptable and can be removed easily in post-results)
-        # Import line to results.csv
-        """
-        Archived,Location,Product,Product Component,Host Name/IP,Expiration,Connection,Use,Alias/Common Name,Issuer,Creation,File Name,Key Pair Location,File Type,Key Strength,Owner/Subject/RootCA Title,Serial Number,Owner,Comments,Received On,Received From,Inherited
-        """
-        # Determines if the entry was a client certificate or a server certificate
-        if cert_type == "trustedCertEntry":
-          if host_name_available:
-            results.write("," + \
-                          location + "," + \
-                          product + ",," + \
-                          host_name + "," + \
-                          expiration_date + \
-                          ",,Trusted Cert," + \
-                          alias + "," + \
-                          issuer + "," + \
-                          start_date + "," + \
-                          cert_store + \
-                          ",,.jks," + \
-                          key_strength + "," + \
-                          owner + "," + \
-                          serial_number + \
-                          ",,," + \
-                          received_on + "," + \
-                          received_from + "," + \
-                          "YES\n")
-          else:
-            results.write("," + \
-                          location + "," + \
-                          product + ",,," + \
-                          expiration_date + \
-                          ",,Trusted Cert," + \
-                          alias + "," + \
-                          issuer + "," + \
-                          start_date + "," + \
-                          cert_store + \
-                          ",,.jks," + \
-                          key_strength + "," + \
-                          owner + "," + \
-                          serial_number + \
-                          ",,," + \
-                          received_on + "," + \
-                          received_from + "," + \
-                          "YES\n")
-        elif cert_type == "PrivateKeyEntry":
-          if host_name_available:
-            results.write("," + \
-                          location + "," + \
-                          product + ",," + \
-                          host_name + "," + \
-                          expiration_date + \
-                          ",,Key Pair," + \
-                          alias + "," + \
-                          issuer + "," + \
-                          start_date + "," \
-                          + cert_store + \
-                          ",,.jks," + \
-                          key_strength + "," + \
-                          owner + "," + \
-                          serial_number + \
-                          ",,," + \
-                          received_on + "," + \
-                          received_from + "," + \
-                          "YES\n")
-          else:
-            results.write("," + \
-                          location + "," + \
-                          product + ",,," + \
-                          expiration_date + \
-                          ",,Key Pair," + \
-                          alias + "," + \
-                          issuer + "," + \
-                          start_date + "," + \
-                          cert_store + \
-                          ",,.jks," + \
-                          key_strength + "," + \
-                          owner + "," + \
-                          serial_number + \
-                          ",,," + \
-                          received_on + "," + \
-                          received_from + "," + \
-                          "YES\n")
         # Cleaning up data after import so a new certificate can be extracted
         is_full_metadata = False
         alias = ""
@@ -437,25 +544,47 @@ def parse():
     # Although the ending of the with statement will close the file it interacts with,
     # to ensure data doesn't get lost or corrupted, we will close prior to the end of the with statement
     file.close()
+
+"""
+This function parses all files in a directory.
+"""
+def parseDirectory():
+  global cert_store
+  directory_list = os.listdir(os.path.abspath(cert_store))
+  full_path = os.path.abspath(cert_store)
+  for file in directory_list:
+    cert_store = full_path + '/' + file
+    parse()
+
+"""
+This function parses a single file.
+"""
+def parseFile():
+  global cert_store
+  cert_store = os.path.abspath(cert_store)
+  parse()
+
+"""
+This logic performs the check on whether or not the argument inputted is a directory or file and parse correctly.
+"""
+def runSingleArgumentParsing():
+  global cert_store
+  if os.path.isdir(os.path.abspath(cert_store)):
+    parseDirectory()
+  elif os.path.isfile(cert_store):
+    parseFile()
+
 def main(argv):
   global cert_store
   
   # No input parameter
   if len(argv) == 0:
     updateFileName()
-    parse()
+    runSingleArgumentParsing()
   # One or more input parameter but only the first input parameter is taken
   elif len(argv) == 1:
     cert_store = argv[0]
-    if os.path.isdir(os.path.abspath(cert_store)):
-      directory_list = os.listdir(os.path.abspath(cert_store))
-      full_path = os.path.abspath(cert_store)
-      for file in directory_list:
-        cert_store = full_path + '/' + file
-        parse()
-    elif os.path.isfile(cert_store):
-      cert_store = os.path.abspath(cert_store)
-      parse()
+    runSingleArgumentParsing()
   elif len(argv) > 1:
     # This assumes that things will only happen from the current level downward
     full_path = os.path.abspath(cert_store)
@@ -468,7 +597,7 @@ if __name__ == '__main__':
   # Starting the main function
   # This try and except is meant to catch a Ctrl+C sudden stop without raising larger concerns
   try:
-    # Takes parameters beside the name of the script
+    # Takes input arguments beside the name of the script
     main(sys.argv[1:])
   except KeyboardInterrupt:
     print('Suddenly exiting: Caused by Ctrl+C')
