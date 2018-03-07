@@ -1,4 +1,4 @@
-Sub getYearly()
+Sub getValidityPeriod()
   Dim iter1 As Integer
   Dim iter2 As Integer
   Dim iter3 As Integer
@@ -6,14 +6,11 @@ Sub getYearly()
   Dim col_count As Integer
   Dim final_column As Integer
   Dim date_diff As Long
-  Dim comparison_date As Long
-
+  
   ' Runs on the active sheet
   row_count = ActiveSheet.Cells(ActiveSheet.Rows.Count, "B").End(xlUp).Row
   col_count = ActiveSheet.Cells(1, ActiveSheet.Columns.Count).End(xlToLeft).Column
   
-  ' Modifiable for future-proofing
-  comparison_date = 1
   ' This one will need to be the last column + 1 to prevent overwriting on a pre-existing column
   final_column = col_count + 1
   
@@ -24,13 +21,12 @@ Sub getYearly()
     If StrComp("Creation", Cells(1, iter2).Value) = 0 Then Exit For
     Next iter2
   
+  Cells(1, final_column).Value = "Validity Period"
+  
   For iter3 = 2 To row_count
     date_diff = DateDiff("yyyy", Cells(iter3, iter2), Cells(iter3, iter1))
-    If date_diff = comparison_date Then
-      Cells(iter3, final_column).Value = "Please use this"
-    Else
-      Cells(iter3, final_column).Value = ""
-    End If
+    Cells(iter3, final_column).Value = date_diff
   Next iter3
 End Sub
+
 

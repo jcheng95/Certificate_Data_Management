@@ -14,28 +14,28 @@ It can take either one input parameter of a filename in the same directory or wi
 parameter was given.
 
 Results format has the follow columns (in order):
-* Archived                       - Used when a certificate is no longer used even if it hasn't expired yet
-* Location                       - The physical location of where the server is housed
-* Product                        - The product that the certificate supports
-* Product Component              - A more specific part to the product that uses the certificate
-* Host Name/IP                   - If local an IP might be more useful information but all things should be resolved to a domain name by the DNS
-* Expiration Date                - Expiration date of the certificate (extracted from the "valid to" portion of metadata)
-* Connection                     - Specifies what the connection is used for; typically shown as X connects to Y as a client by authentication this certificate
-* Use                            - Used either as a client (trust cert) or a server (keypair) certificate
-* Alias/Common Name              - Sometimes the alias matches the common name but this is the alias present in the keystore
-* Issuer                         - The issuer of the certificate
-* Creation Date                  - Creation date of the certificate (extracted from the "valid from" portion of the metadata)
-* File Name                      - File name that is extracted from the absolute path of the variable cert_store
-* Key pair location              - This is an archaic field
-* File Type                      - File extension
-* Key Strength                   - Encryption algorithm
-* Owner/Subject/RootCA Title     - The subject of the certificate
-* Serial Number                  - Serial number of the certificate
-* Owner                          - This is an archaic field but it represented the group owner of the certificate (person in control of the keypair)
-* Comments                       - Any additional comments or updates that add more specific details
-* Received On                    - Date when the certificate metadata was provided
-* Received From                  - Person who provided the certificate metadata
-* Inherited                      - Whether or not the certificate was created by an internal group or provided by someone else or another vendor
+* Archived
+* Location
+* Product
+* Product Component
+* Host Name/IP
+* Expiration Date
+* Connection
+* Use
+* Alias/Common Name
+* Issuer
+* Creation Date
+* File Name
+* Key pair location
+* File Type
+* Key Strength
+* Owner/Subject/RootCA Title
+* Serial Number
+* Owner
+* Comments
+* Received On
+* Received From
+* Inherited
 """
 # Global variables
 cert_store = ''
@@ -89,9 +89,50 @@ atexit.register(closeAllOpenFiles)
 # This function serves no other purpose than for modularity and making more (useful) subprocedures for future testing
 def updateFileName():
   global cert_store
-  
-  cert_store = raw_input('Please input the keystore/truststore text file you would like to access: \n')
+  while cert_store == "":
+    cert_store = raw_input('\nPlease input the keystore/truststore text file you would like to access: \n')
   cert_store = os.path.abspath(cert_store)
+
+# Polls user for common metadata
+def defineGlobalVariables():
+  global location
+  global product
+  global product_component
+  global received_on
+  global received_from
+  global host_name_available
+
+  host_name_input = ""
+
+  while location == "":
+    location = raw_input("\nPlease input the physical location that the certificate will be at:\n")
+    if location == "":
+      print("\nPlease provide a physical location!\n")
+  while product == "":
+    product = raw_input("\nPlease input the product that will make use of the certificate:\n")
+    if product == "":
+      print("\nPlease provide a product!\n")
+  while product_component == "":
+    product_component = raw_input("\nPlease input the component corresponding the product that will make use of the certificate:\n")
+    if product_component == "":
+      print("\nPlease provide a product component!\n")
+  while received_on == "":
+    received_on = raw_input("\nPlease input the day (format: M/D/YYYY) that the certificate(s) was/were provided:\n")
+    if received_on == "":
+      print("\nPlease provide a date that the certificate(s) was/were received on!\n")
+  while received_from == "":
+    received_from = raw_input("\nPlease input the person/group who provided the certificate(s)\n")
+    if received_from == "":
+      print("\nPlease provide a person or group from whom the certificate(s) was/were obtained from!\n")
+
+  while host_name_input == "":
+    host_name_input = raw_input("\nAre there host names in the files that we can use (Y/N)?\n").lower()
+    if host_name_input == 'y':
+      host_name_available = True
+    elif host_name_input == 'n':
+      host_name_available = False
+    else:
+      print("\nPlease provide a valid response!\n")
 
 """
 This function is the basic extraction where it begins a string splice from the starting
@@ -445,7 +486,7 @@ def checkForCompleteness(hostName, alias, certType, owner, issuer, serialNumber,
     if host_name_available:
       print("\nExtraction Result:\n\n{}, {}, {}, {}, {}, {}, {}, {}, {}".format(alias, certType, hostName, issuer, owner, serialNumber, startDate, expirationDate, keyStrength))
     else:
-      print("\nExtraction Result:\n\n{}, {}, '', {}, {}, {}, {}, {}, {}".format(alias, certType, issuer, owner, serialNumber, startDate, expirationDate, keyStrength))
+      print("\nExtraction Result:\n\n{}, {}, "", {}, {}, {}, {}, {}, {}".format(alias, certType, issuer, owner, serialNumber, startDate, expirationDate, keyStrength))
     return True
   else:
     return False
@@ -576,7 +617,9 @@ def runSingleArgumentParsing():
 
 def main(argv):
   global cert_store
-  
+
+  defineGlobalVariables()
+
   # No input parameter
   if len(argv) == 0:
     updateFileName()

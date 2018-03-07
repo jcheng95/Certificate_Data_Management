@@ -4,9 +4,9 @@ Sub getNinetyDays()
   Dim row_count As Integer
   Dim col_count As Integer
 
-  ' Modify the sheet number to match the appropriate sheet for the consolidated sheet
-  row_count = Sheet3.Cells(Sheet3.Rows.Count, "A").End(xlUp).Row
-  col_count = Sheet3.Cells(Sheet3.Columns.Count, 1).End(xlToRight).Column
+  ' Runs on the active sheet
+  row_count = ActiveSheet.Cells(ActiveSheet.Rows.Count, "B").End(xlUp).Row
+  col_count = ActiveSheet.Cells(1, ActiveSheet.Columns.Count).End(xlToLeft).Column
   
   For iter1 = 1 To col_count
     If StrComp("Expiration", Cells(1, iter1).Value) = 0 Then

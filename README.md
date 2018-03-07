@@ -1,9 +1,13 @@
 # Description #
 This project houses scripts and macros to manipulate data obtained from a listing of certificate keystores.
 
+## automation.py ##
+### Description ###
+This Python program will take user input to create a self-issued keypair based on the certificate authority (CA) that will be used to get a trust anchor chained to the keypair. The program also has diverging paths for whether the certificate will only be used in the test environment or production.
+
 ## generate_results.py ##
 ### Description ###
-This Python program can take 4 different types of inputs (as shown in the table below). This program takes a data dump from the use of "keytool -list -v" in order to extract pertinent metadata and put it into a CSV for spreadsheet maintenance.
+This Python program can take 4 different types of inputs (as shown in the table below). This program takes a data dump from the use of "keytool -list -v" in order to extract pertinent metadata and put it into a CSV for spreadsheet maintenance. This program, after obtaining the keystore(s), will ask the user to input the physical location, product, product component, received on (date in format: M/D/YYYY), and received from as part of the static columns that will be used for all items in the keystore(s).
 
 ### Argument Inputs ###
 Arguments      | Description
@@ -33,3 +37,7 @@ This macro calculates the difference in years between the creation date and expi
 Expiration Year - Creation Year
 
 If the difference in years matches the *comparison_date* variable, then it will notify you with "Use this" to let you know that the difference matches the number specified by that variable. This is useful for when a user wants to know which certificates have a validity period of X years.
+
+## generate_validity_period_macro.txt ##
+### Description ###
+This macro, much like the "generate_yearly_macro" macro, will calculate the difference in years between the creation date and expiration date. However, this macro does not look for a comparison date but instead looks to provide the difference in years between the creation date and expiration date and populate a new column at the end (on the right) with the result.
