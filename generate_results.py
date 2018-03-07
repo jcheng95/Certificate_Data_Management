@@ -633,7 +633,7 @@ def main(argv):
     full_path = os.path.abspath(cert_store)
     for file in argv:
       cert_store = full_path + '/' + file
-      parse()
+      runSingleArgumentParsing()
   results.close()
 
 if __name__ == '__main__':
