@@ -150,14 +150,12 @@ def defineGlobalVariables():
     if received_on == "":
       print("\nPlease provide a date that the certificate(s) was/were received on!\n")
     elif len(received_on_test) == 3:
-      print("made it to the 3 count check")
       if not received_on_test[0].isdigit() or \
          (len(received_on_test[0]) != 1 and len(received_on_test[0]) != 2) or \
          not received_on_test[1].isdigit() or \
          (len(received_on_test[1]) != 1 and len(received_on_test[1]) != 2) or \
          not received_on_test[2].isdigit() or \
          len(received_on_test[2]) != 4:
-        print("made it to a string size fail")
         received_on = ""
         print("\nPlease provide a valid date!\n")
     elif len(received_on_test) != 3:
