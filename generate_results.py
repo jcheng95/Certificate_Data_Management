@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-import readline # This import allows for an improvement of the input function
 import atexit
 import os
 
