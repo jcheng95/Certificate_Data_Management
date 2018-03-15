@@ -76,23 +76,43 @@ results = open("results.csv", 'w+')
 # Initial write to create the columns headers
 results.write("Archived,Location,Product,Product Component,Host Name/IP,Expiration,Connection,Use,Alias/Common Name,Issuer,Creation,File Name,Key Pair Location,File Type,Key Strength,Owner/Subject/RootCA Title,Serial Number,Owner,Comments,Received On,Received From,Inherited\n")
 
-# Function used in the atexit exit handler
+"""
+Function used in the atexit exit handler
+"""
 def closeAllOpenFiles():
   # Although Python always closes file when it ends and after a "with" statement, this is to ensure data corruption does not occur
   results.close()
 
-# Registering the "closeAllOpenFiles" function as a function that will
-# be called upon exit (hopefully whenever a sudden exit occurs but not when fatal errors occur)
+"""
+Registering the "closeAllOpenFiles" function as a function that will
+be called upon exit (hopefully whenever a sudden exit occurs but not when fatal errors occur)
+"""
 atexit.register(closeAllOpenFiles)
 
-# This function serves no other purpose than for modularity and making more (useful) subprocedures for future testing
+"""
+This function serves no other purpose than for modularity and making more (useful) subprocedures for future testing.
+"""
 def updateFileName():
   global cert_store
   while cert_store == "":
     cert_store = raw_input('\nPlease input the keystore/truststore text file you would like to access: \n')
   cert_store = os.path.abspath(cert_store)
 
-# Polls user for common metadata
+"""
+This function validates whether or not the user provided the input they wanted by polling the user for more input.
+"""
+def validateInputCorrectness(var):
+  var_check = raw_input('\nPlease confirm "' + var + '" is correct(Y/N):\n').lower()
+  while var_check != 'y' and var_check != 'n':
+    print("\nPlease provide a valid response!\n")
+    var_check = raw_input('\nPlease confirm "' + var + '" is correct(Y/N):\n').lower()
+  if var_check == 'n':
+    return ""
+  return var
+
+"""
+This method defines the global variables set at the beginning of this file by polling the user for input.
+"""
 def defineGlobalVariables():
   global location
   global product
@@ -107,24 +127,53 @@ def defineGlobalVariables():
     location = raw_input("\nPlease input the physical location that the certificate will be at:\n")
     if location == "":
       print("\nPlease provide a physical location!\n")
+    else:
+      location = validateInputCorrectness(location)
+
   while product == "":
     product = raw_input("\nPlease input the product that will make use of the certificate:\n")
     if product == "":
       print("\nPlease provide a product!\n")
+    else:
+      product = validateInputCorrectness(product)
+
   while product_component == "":
     product_component = raw_input("\nPlease input the component corresponding the product that will make use of the certificate:\n")
     if product_component == "":
       print("\nPlease provide a product component!\n")
+    else:
+      product_component = validateInputCorrectness(product_component)
+
   while received_on == "":
     received_on = raw_input("\nPlease input the day (format: M/D/YYYY) that the certificate(s) was/were provided:\n")
+    received_on_test = received_on.split('/')
     if received_on == "":
       print("\nPlease provide a date that the certificate(s) was/were received on!\n")
+    elif len(received_on_test) == 3:
+      print("made it to the 3 count check")
+      if not received_on_test[0].isdigit() or \
+         (len(received_on_test[0]) != 1 and len(received_on_test[0]) != 2) or \
+         not received_on_test[1].isdigit() or \
+         (len(received_on_test[1]) != 1 and len(received_on_test[1]) != 2) or \
+         not received_on_test[2].isdigit() or \
+         len(received_on_test[2]) != 4:
+        print("made it to a string size fail")
+        received_on = ""
+        print("\nPlease provide a valid date!\n")
+    elif len(received_on_test) != 3:
+      received_on = ""
+      print("\nPlease provide a valid date!\n")
+    else:
+      received_on = validateInputCorrectness(received_on)
+
   while received_from == "":
     received_from = raw_input("\nPlease input the person/group who provided the certificate(s)\n")
     if received_from == "":
       print("\nPlease provide a person or group from whom the certificate(s) was/were obtained from!\n")
+    else:
+      received_from = validateInputCorrectness(received_from)
 
-  while host_name_input == "":
+  while host_name_input != 'y' and host_name_input != 'n':
     host_name_input = raw_input("\nAre there host names in the files that we can use (Y/N)?\n").lower()
     if host_name_input == 'y':
       host_name_available = True
@@ -496,9 +545,117 @@ and then prints out all the pertinent metadata (including hard-coded values stor
 variables) in the appropriate columns headers format to results.csv
 
 *** Please note that any file that has been formatted by DOS must be converted to UNIX ***
+
+Parameters:
+---------------------
+line: string
+This is the file that runs under the assumption that the file is a regular file and then runs the parsing function to
+extract all pertinent metadata.
+
+alias: string
+This is the alias that is currently set when trying to interpret the line.
+
+cert_type: string
+This is the certificate type (keypair or trusted cert) that is currently set when trying to interpret the line.
+
+owner: string
+This is the owner line that is currently set when trying to interpret the line.
+
+issuer: string
+This is the issuer line that is currently set when trying to interpret the line.
+
+serial_number: string
+This is the serial number that is currently set when trying to interpret the line.
+
+start_date: string
+This is the shorthand start date that is currently set when trying to interpret the line.
+
+expiration_date: string
+This is the shorthand expiration date that is currently set when trying to interpret the line.
+
+key_strength: string
+This is the signature algorithm that is currently set when trying to interpret the line.
+
+Returns:
+---------------------
+newAlias: string
+This is the new alias determined by the line if it exists on the line and the input parameter was empty.
+
+newCertType: string
+This is the certificate type (keypair or trusted ert) determined by the line if it exists on the line and the input
+parameter was empty.
+
+newOwner: string
+This is the owner line determined by the line if it exists on the line and the input parameter was empty.
+
+newIssuer: string
+This is the issuer line determined by the line if it exists on the line and the input parameter was empty.
+
+newSerialNumber: string
+This is the serial number determined by the line if it exists on the line and the input parameter was empty.
+
+newStartDate: string
+This is the shorthand start date determined by the line if it exists on the line and the input parameter was empty.
+
+newExpirationDate: string
+This is the shorthand expiration date determined by the line if it exists on the line and the input parameter was empty.
+
+newKeyStrength: string
+This is the signature algorithm determined by the line if it exists on the line and the input parameter was empty.
 """
-def parse():
-  global cert_store
+def processLine(line, alias, cert_type, owner, issuer, serial_number, start_date, expiration_date, key_strength):
+  newAlias = alias
+  newCertType = cert_type
+  newOwner = owner
+  newIssuer = issuer
+  newSerialNumber = serial_number
+  newStartDate = start_date
+  newExpirationDate = expiration_date
+  newKeyStrength = key_strength
+  # Nested if statement control flow to prevent multiple calls to the validateAndExtract
+  # or validateAndExtractDates functions which will take up space on the assembly instructions set
+  if alias == "":
+    newAlias = checkForAlias(alias, line)
+  else:
+    if cert_type == "":
+      newCertType = checkForCertType(cert_type, line)
+    else:
+      if owner == "":
+        newOwner = checkForOwner(owner, line)
+      else:
+        if issuer == "":
+          newIssuer = checkForIssuer(issuer, line)
+        else:
+          if serial_number == "":
+            newSerialNumber = checkForSerialNumber(serial_number, line)
+          else:
+            if start_date == "":
+              newStartDate = checkForStartDate(start_date, line)
+            if expiration_date == "":
+              newExpirationDate = checkForExpirationDate(expiration_date, line)
+            else:
+              if key_strength == "":
+                newKeyStrength = checkForKeyStrength(key_strength, line)
+  return newAlias, newCertType, newOwner, newIssuer, newSerialNumber, newStartDate, newExpirationDate, newKeyStrength
+
+"""
+This function parses through each line of the text file that this script takes as user input
+and then prints out all the pertinent metadata (including hard-coded values stored as global
+variables) in the appropriate columns headers format to results.csv
+
+*** Please note that any file that has been formatted by DOS must be converted to UNIX ***
+
+Parameters:
+---------------------
+f: string
+This is the file that runs under the assumption that the file is a regular file and then runs the parsing function to
+extract all pertinent metadata.
+
+Returns:
+---------------------
+None
+"""
+def parse(f):
   global results
   global location
   global product
@@ -520,7 +677,7 @@ def parse():
   global is_full_metadata
 
   # Opening the file
-  with open(cert_store, 'r') as file:
+  with open(f, 'r') as file:
     # For whatever reason, readlines() will not work because additional
     # new-line characters were added into the text file. This (file.read().splitlines()) removes that issue.
     lines = file.read().splitlines()
@@ -536,30 +693,8 @@ def parse():
       # This entire set of logic could have been placed in a separate function for modularity
       # ** Take note to do this in future revisions **
       if not is_full_metadata:
-        # Nested if statement control flow to prevent multiple calls to the validateAndExtract
-        # or validateAndExtractDates functions which will take up space on the assembly instructions set
-        if alias == "":
-          alias = checkForAlias(alias, line)
-        else:
-          if cert_type == "":
-            cert_type = checkForCertType(cert_type, line)
-          else:
-            if owner == "":
-              owner = checkForOwner(owner, line)
-            else:
-              if issuer == "":
-                issuer = checkForIssuer(issuer, line)
-              else:
-                if serial_number == "":
-                  serial_number = checkForSerialNumber(serial_number, line)
-                else:
-                  if start_date == "":
-                    start_date = checkForStartDate(start_date, line)
-                  if expiration_date == "":
-                    expiration_date = checkForExpirationDate(expiration_date, line)
-                  else:
-                    if key_strength == "":
-                      key_strength = checkForKeyStrength(key_strength, line)
+        alias, cert_type, owner, issuer, serial_number, start_date, expiration_date, key_strength = processLine(line, alias, cert_type, owner, issuer, serial_number, start_date, expiration_date, key_strength)
+
         if host_name_available:
           is_full_metadata = checkForCompleteness(host_name, alias, cert_type, owner, issuer, serial_number, start_date, expiration_date, key_strength)
         else:
@@ -586,53 +721,68 @@ def parse():
     file.close()
 
 """
-This function parses all files in a directory.
+This function parses a single file. This function assumes that the file passed in will be a regular file.
+
+Parameters:
+---------------------
+file: string
+This is the file that runs under the assumption that the file is a regular file and then runs the parsing function to
+extract all pertinent metadata.
+
+Returns:
+---------------------
+None
 """
-def parseDirectory():
-  global cert_store
-  directory_list = os.listdir(os.path.abspath(cert_store))
-  full_path = os.path.abspath(cert_store)
-  for file in directory_list:
-    cert_store = full_path + '/' + file
-    parse()
+def parseFile(file):
+  parse(os.path.abspath(file))
 
 """
-This function parses a single file.
-"""
-def parseFile():
-  global cert_store
-  cert_store = os.path.abspath(cert_store)
-  parse()
+This is the replacement to runSingleArgumentParsing() whereby this function recursively digs through the filesystem until it reaches
+a directory that has only files in it and only parses files. This removes the restriction of only searching 1-level deep into a
+filesystem.
 
+Parameters:
+---------------------
+f: string
+This is the file that will be checked as either a regular file or a directory and will be treated accordingly
+to recursively parse through all available files.
+
+Returns:
+---------------------
+None
 """
-This logic performs the check on whether or not the argument inputted is a directory or file and parse correctly.
-"""
-def runSingleArgumentParsing():
+def recursiveParsing(f):
   global cert_store
-  if os.path.isdir(os.path.abspath(cert_store)):
-    parseDirectory()
-  elif os.path.isfile(cert_store):
-    parseFile()
+  if os.path.isdir(f):
+    base_path = os.path.abspath(f)
+    directory_list = os.listdir(base_path)
+    for file in directory_list:
+      if os.path.isdir(base_path + '/' + file):
+        recursiveParsing(base_path + '/' + file)
+      elif os.path.isfile(base_path + '/' + file):
+        parseFile(base_path + '/' + file)
+  elif os.path.isfile(os.path.abspath(f)):
+    parseFile(f)
 
 def main(argv):
   global cert_store
 
   defineGlobalVariables()
 
-  # No input parameter
+  # No input parameter`
   if len(argv) == 0:
     updateFileName()
-    runSingleArgumentParsing()
+    recursiveParsing(cert_store)
   # One or more input parameter but only the first input parameter is taken
   elif len(argv) == 1:
     cert_store = argv[0]
-    runSingleArgumentParsing()
+    recursiveParsing(cert_store)
   elif len(argv) > 1:
     # This assumes that things will only happen from the current level downward
     full_path = os.path.abspath(cert_store)
     for file in argv:
       cert_store = full_path + '/' + file
-      runSingleArgumentParsing()
+      recursiveParsing(cert_store)
   results.close()
 
 if __name__ == '__main__':
