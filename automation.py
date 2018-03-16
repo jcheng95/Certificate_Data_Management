@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-import readline # This import allows for an improvement of the input function
 import atexit
 import os
 from subprocess import call
@@ -14,14 +13,36 @@ import getpass
 common_dict = {"entrust-prod" : "OU=NHIN, O=HHS-ONC, C=US", \
                "entrust-test" : "OU=NHIN-Test, O=NHIN, C=US", \
                "37-prod" : "OU=DISA, OU=PKI, OU=DOD, O=U.S. Government, C=US", \
-               "37-test" : "OU = CONTRACTOR, OU = PKI, OU = DoD, O = U.S. Government, C = US", \
+               "37-test" : "OU=CONTRACTOR, OU=PKI, OU=DoD, O=U.S. Government, C=US", \
                "38" : "OU=DISA, OU=PKI, OU=DOD, O=U.S. Government, C=US"}
+
+# Dictionary to map test and prod to their first letter
+test_prod_dict = {"t" : "test", \
+                  "p" : "prod", \
+                  "" : ""}
+
+# Dictionary to map the first letters of test and prod to their expanded name
+t_p_dict = {"test" : "t", \
+            "prod" : "p", \
+            "" : ""}
 
 # Global variables
 certificate_authority = ""
 owner_line = ""
 common_name = ""
 test_or_prod = ''
+
+"""
+This function validates whether or not the user provided the input they wanted by polling the user for more input.
+"""
+def validateInputCorrectness(var):
+  var_check = raw_input('\nPlease confirm "' + var + '" is correct(Y/N):\n').lower()
+  while var_check != 'y' and var_check != 'n':
+    print("\nPlease provide a valid response!\n")
+    var_check = raw_input('\nPlease confirm "' + var + '" is correct(Y/N):\n').lower()
+  if var_check == 'n':
+    return ""
+  return var
 
 """
 This function is used to set the common name based on the certificate authority thalts will be the same but the question specifies
@@ -41,11 +62,11 @@ def setCommonName(ca):
   cn = ""
   while cn == "":
     if ca == "entrust":
-      cn = raw_input(
-        'Please input the reference number that you were provided (not the same as the authorization code): \n')
+      cn = raw_input('\nPlease input the reference number that you were provided (not the same as the authorization code): \n')
     elif ca == "37" or ca == "38":
-      cn = raw_input(
-        'Please input the common name you would like to use (it will be used as the alias and filenames): \n')
+      cn = raw_input('\nPlease input the common name you would like to use (it will be used as the alias and filenames): \n')
+    else:
+      cn = validateInputCorrectness(cn)
   return cn
 
 """
@@ -91,12 +112,18 @@ def setCertificateAuthority():
   global test_or_prod
   ca = ""
   while ca != "entrust" and ca != "37" and ca != "38":
-    ca = raw_input('Please input the Certificate Authority (CA) you will be using (entrust, 37, 38): \n').lower()
+    ca = raw_input('\nPlease input the Certificate Authority (CA) you will be using (entrust, 37, 38): \n').lower()
     if (ca != "entrust") and (ca != "37") and (ca != "38"):
       print("\nPlease enter a correct CA!\n")
-    elif ca == "entrust" or ca == "37":
+    else:
+      ca = validateInputCorrectness(ca)
+    if ca == "entrust" or ca == "37":
       while test_or_prod != 't' and test_or_prod != 'p':
         test_or_prod = raw_input('\nIs this certificate for test or production (T/P)?\n').lower()
+        if test_or_prod != 't' and test_or_prod != 'p':
+          print("\nPlease provide a valid response!\n")
+        else:
+          test_or_prod = t_p_dict[validateInputCorrectness(test_prod_dict[test_or_prod])]
   return ca
 
 """
@@ -111,18 +138,18 @@ Returns:
 ---------------------
 NONE
 """
-def pollForCorrectness():
+def checkOwnerCorrectness():
   global owner_line
   global common_name
   poll = False
   while not poll:
-    userInput = raw_input('Is "' + common_name + ', ' + owner_line + '"\ncorrect (Y/N)?\n')
+    userInput = raw_input('\nIs "CN=' + common_name + ', ' + owner_line + '" correct (Y/N)?\n')
     if userInput.lower() == 'y':
       poll = True
     elif userInput.lower() == 'n':
       owner_line, common_name = setOwnerLine(certificate_authority)
     else:
-      continue
+      print("\nPlease provide a valid response!\n")
 
 """
 This function is used to combine the common name and the rest of the owner line to create the distinguished name that will be used when running the keytool command.
@@ -180,7 +207,7 @@ pw : string
 def setPassword():
   pw = ""
   while not validatePassword(pw):
-    pw = getpass.getpass("Please input the keystore/keypair password you would like to use:\n")
+    pw = getpass.getpass("\nPlease input the keystore/keypair password you would like to use:\n")
     if pw == "":
       print("\nPlease put in a password so that it can be secure!\n")
   return pw
@@ -194,14 +221,14 @@ def main():
   # Getting the appropriate information to run the keytool commands
   certificate_authority = setCertificateAuthority()
   owner_line, common_name = setOwnerLine(certificate_authority)
-  pollForCorrectness() # This will check the previous command was run to the user's predilection
+  checkOwnerCorrectness() # This will check the previous command was run to the user's predilection
   full_line = createDistinguishedName(owner_line, common_name)
   password = setPassword()
 
   print("\nGenerating the key pair\n")
   call('keytool -genkey -keyalg RSA -keysize 2048 -sigalg SHA256withRSA -validity 3650 -storepass "' + password + '" -keypass "' + password + '" -alias "' + common_name + '" -keystore "' + common_name + '.jks" -dname "' + full_line + '"', shell=True)
   print("\nGenerating the CSR\n")
-  call("keytool -certreq -keyalg RSA -storepass " + password + " -alias '" + common_name + "' -file '" + common_name + ".csr' -keystore '" + common_name + ".jks'", shell=True)
+  call("keytool -certreq -keyalg RSA -storepass '" + password + "' -alias '" + common_name + "' -file '" + common_name + ".csr' -keystore '" + os.path.abspath(common_name + ".jks") + "'", shell=True)
   print("\nFinished!\n")
 
 if __name__ == '__main__':
